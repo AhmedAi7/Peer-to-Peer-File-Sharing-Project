@@ -1,17 +1,6 @@
 package p2p.project;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -39,12 +28,9 @@ public class P2PProject {
             try {
                 Socket socket;
                 ArrayList<FileStruct> arrList = new ArrayList<FileStruct>();
-                Scanner scanner = new Scanner(System.in);
                 ObjectInputStream ois;
                 ObjectOutputStream oos;
-                //ArrayList al;  
                 String string;
-                Object o, b;
                 String directoryPath = null;
                 int peerServerPort = 0;
                 int PortToConnect = 0;
@@ -57,35 +43,22 @@ public class P2PProject {
                 System.out.println("Connection has been established with the client");
                 System.out.println("Browse a Folder To make it Shareable .. ");
                 directoryPath = Browse();
-                ClientDownload objServerDownload = new ClientDownload(peerServerPort, directoryPath);
-                objServerDownload.start();
-                /*
-                Socket clientThread = new Socket("localhost", PortToConnect);
+                ClientDownload objclientDownload = new ClientDownload(peerServerPort, directoryPath);
+                objclientDownload.start();
 
-                ObjectOutputStream objOutStream = new ObjectOutputStream(clientThread.getOutputStream());
-                ObjectInputStream objInStream = new ObjectInputStream(clientThread.getInputStream());
-
-                al = new ArrayList();
-                */
                 ois = new ObjectInputStream(socket.getInputStream());
                 oos = new ObjectOutputStream(socket.getOutputStream());
-                System.out.println("Enter the peerid for this directory :");
-                int readpid = Integer.parseInt(reader.readLine());
-                
+
                 System.out.println("1) Share File with any client ");
                 System.out.println("2) Choose Specific clients to share with ");
                 choice = Integer.parseInt(reader.readLine());
-                ArrayList <Integer> arrayOfPorts=new ArrayList<Integer>();
-                
-                if (choice ==1)
-                {
-                    arrayOfPorts.add(1);
-                }
-                else if (choice == 2)
-                {
+                ArrayList<Integer> arrayOfPorts = new ArrayList<Integer>();
+
+                if (choice == 1) {
+                    arrayOfPorts.add(-1);
+                } else if (choice == 2) {
                     int PortToAdd;
-                    while (true)
-                    {
+                    while (true) {
                         System.out.println(" ");
                         System.out.println("ADD Port Number for client to share the file with: ");
                         PortToAdd = Integer.parseInt(reader.readLine());
@@ -94,12 +67,12 @@ public class P2PProject {
                         System.out.println("1) Add another one ");
                         System.out.println("2) Save and Continue ");
                         choice = Integer.parseInt(reader.readLine());
-                        if (choice==2)
+                        if (choice == 2) {
                             break;
                         }
-                            
                     }
-                
+                }
+
                 File folder = new File(directoryPath);
                 File[] listofFiles = folder.listFiles();
                 FileStruct currentFile;
@@ -108,13 +81,12 @@ public class P2PProject {
                     currentFile = new FileStruct();
                     file = listofFiles[i];
                     currentFile.fileName = file.getName();
-                    currentFile.peerid = readpid;
                     currentFile.portNumber = peerServerPort;
-                    currentFile.arrOfPorts=arrayOfPorts;
+                    currentFile.arrOfPorts = arrayOfPorts;
                     arrList.add(currentFile);
                 }
                 oos.writeObject(arrList);
-                //System.out.println("The complete ArrayList :::"+arrList);
+
                 System.out.println("Enter the desired file name that you want to downloaded from the list of the files available in the Server ::");
                 String fileNameToDownload = reader.readLine();
                 oos.writeObject(fileNameToDownload);
@@ -123,38 +95,42 @@ public class P2PProject {
                 ArrayList<FileStruct> peers = new ArrayList<FileStruct>();
                 peers = (ArrayList<FileStruct>) ois.readObject(); // take arr from server class
                 for (int i = 0; i < peers.size(); i++) {
-                    int result = peers.get(i).peerid;
                     int port = peers.get(i).portNumber;
-                    System.out.println("The file is stored at peer id " + result + " on port " + port);
+                    System.out.println("The file is stored on port " + port);
                 }
                 System.out.println("Enter the respective port number of the above peer id :");
                 int clientAsServerPortNumber = Integer.parseInt(reader.readLine());
-                System.out.println("Enter the desired peer id from which you want to download the file from :");
-                int clientAsServerPeerid = Integer.parseInt(reader.readLine());
-                clientRecieve(clientAsServerPeerid, clientAsServerPortNumber, fileNameToDownload, directoryPath);
-                //runServer(peerServerPort);
+                clientRecieve(clientAsServerPortNumber, fileNameToDownload, directoryPath);
+                System.out.println("If You Want to Exit and end sharing the files Press 0");
+                while (true) {
+                    choice = Integer.parseInt(reader.readLine());
+                    if (choice == 0) {
+                        break;
+                    }
+                }
             } catch (ClassNotFoundException ex) {
                 Logger.getLogger(P2PProject.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
-    public static String Browse () {
-        
-      System.out.println("ssss ");
-    JFileChooser chooser = new JFileChooser();
-    chooser.setCurrentDirectory(new java.io.File("."));
-    chooser.setDialogTitle("choosertitle");
-    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-    chooser.setAcceptAllFileFilterUsed(false);
 
-    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-      return chooser.getSelectedFile().getAbsolutePath();
-    } else {
-      System.out.println("No Selection ");
-    }
+    public static String Browse() {
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setCurrentDirectory(new java.io.File("."));
+        chooser.setDialogTitle("choosertitle");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            return chooser.getSelectedFile().getAbsolutePath();
+        } else {
+            System.out.println("No Selection ");
+        }
         return null;
-  }
-    public static void clientRecieve(int clientAsServerPeerid, int clientAsServerPortNumber, String fileNamedwld, String directoryPath) throws ClassNotFoundException {
+    }
+
+    public static void clientRecieve(int clientAsServerPortNumber, String fileNamedwld, String directoryPath) throws ClassNotFoundException {
         try {
             Socket clientRecievesocket = new Socket("localhost", clientAsServerPortNumber);
 
@@ -167,16 +143,14 @@ public class P2PProject {
             //System.out.println("Number of bytes that have been transferred are ::"+readBytes);
             byte[] b = new byte[readBytes];
             clientAsServerOIS.readFully(b);
-            OutputStream fileOPstream = new FileOutputStream(directoryPath + "//" + fileNamedwld);
-
-            BufferedOutputStream BOS = new BufferedOutputStream(fileOPstream);
+            BufferedOutputStream BOS = new BufferedOutputStream(new FileOutputStream(directoryPath + "//" + fileNamedwld));
             BOS.write(b, 0, (int) readBytes);
 
             System.out.println("Requested file - " + fileNamedwld + ", has been downloaded to your desired directory " + directoryPath);
             System.out.println(" ");
             System.out.println("Display file " + fileNamedwld);
-            
-            String fileplace = (String) clientAsServerOIS.readObject();
+            BOS.flush();
+            String fileplace = directoryPath + "//" + fileNamedwld;
             File myfile = new File(fileplace);
             Scanner myReader = new Scanner(myfile);
             while (myReader.hasNextLine()) {
@@ -185,7 +159,6 @@ public class P2PProject {
             }
             myReader.close();
 
-            BOS.flush();
         } catch (IOException ex) {
             Logger.getLogger(P2PProject.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -196,6 +169,8 @@ public class P2PProject {
         ServerSocket serverSocket = null;
         Socket socket = null;
         serverSocket = new ServerSocket(ServerPort);
+        
+        
         System.out.println("Server started...");
         System.out.println("Waiting for Client...");
         while (true) {
@@ -222,8 +197,7 @@ class MultibleServer extends Thread // to service more than one client at the sa
     String str;
     int index;
     int PortNum;
-    
-    @SuppressWarnings("unchecked")
+
     public void run() {
         try {
             InputStream is = socket.getInputStream();
@@ -257,7 +231,7 @@ class MultibleServer extends Thread // to service more than one client at the sa
             FileStruct fileInfo = globalArray.get(j);
             Boolean x = null;
             try {
-                x = fileInfo.fileName.equals(str) && Check(PortNum,fileInfo.arrOfPorts);
+                x = fileInfo.fileName.equals(str) && Check(PortNum, fileInfo.arrOfPorts);
             } catch (IOException ex) {
                 Logger.getLogger(MultibleServer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -274,16 +248,16 @@ class MultibleServer extends Thread // to service more than one client at the sa
         }
     }
 
-    private static boolean Check(int Port ,ArrayList<Integer> array) throws IOException {
-        if (array.get(0)==1)
+    private static boolean Check(int Port, ArrayList<Integer> array) throws IOException {
+        if (array.get(0) == -1) {
             return true;
-        else {
-        for (int i = 0; i < array.size(); i++) 
-        {
-            if (array.get(i)==Port)
-                return true;
-        }
-        return false;
+        } else {
+            for (int i = 0; i < array.size(); i++) {
+                if (array.get(i) == Port) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

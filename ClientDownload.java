@@ -1,6 +1,5 @@
+ package p2p.project;
 
-package p2p.project;
- 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,20 +17,19 @@ public class ClientDownload extends Thread
     String  directoryPath=null;
     ServerSocket dwldServerSocket;
     Socket dwldSocket=null;
-    
     ClientDownload(int peerServerPort,String directoryPath) {        
     	this.peerServerPort=peerServerPort;
     	this.directoryPath=directoryPath;    
     }
-    @Override
     public void run(){
-        try {
+    	try {
             dwldServerSocket = new ServerSocket(peerServerPort);
             dwldSocket = dwldServerSocket.accept();
             new ClientDownloadThread(dwldSocket,directoryPath).start();
-        } catch (IOException ex) {
+        } 
+    	catch (IOException ex) {
             Logger.getLogger(ClientDownload.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    	}
     }    
 } 
 class ClientDownloadThread extends Thread
@@ -45,21 +43,16 @@ class ClientDownloadThread extends Thread
     }
 	public void run()
     {
-            ObjectOutputStream objOS = null;
-            try {
-            objOS = new ObjectOutputStream(dwldThreadSocket.getOutputStream());
+        try
+        {
+            ObjectOutputStream objOS = new ObjectOutputStream(dwldThreadSocket.getOutputStream());
             ObjectInputStream objIS = new ObjectInputStream(dwldThreadSocket.getInputStream());
-            String fileName = null;
-                try {
-                    fileName = (String)objIS.readObject();
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(ClientDownloadThread.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            
+            String fileName = (String)objIS.readObject();
             String fileLocation;// Stores the directory name
             while(true)
             {
-                String fileplace =directoryPath+"//"+fileName;
-                File myFile = new File(fileplace);
+                File myFile = new File(directoryPath+"//"+fileName);
                 long length = myFile.length();
                 
                 byte [] byte_arr = new byte[(int)length];
@@ -71,22 +64,14 @@ class ClientDownloadThread extends Thread
                 BufferedInputStream objBIS = new BufferedInputStream(FIS);
                 objBIS.read(byte_arr,0,(int)myFile.length());
                 
-                //System.out.println("Sending the file of " +byte_arr.length+ " bytes");
-                
                 objOS.write(byte_arr,0,byte_arr.length);
-                //objOS.flush();                  
-                objOS.writeObject((String)fileplace);
-                objOS.flush();
+                
+                objOS.flush();                
             }
         }
-         catch (IOException ex) {
-            Logger.getLogger(ClientDownloadThread.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                objOS.close();
-            } catch (IOException ex) {
-                Logger.getLogger(ClientDownloadThread.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        catch(Exception e)
+        {
+            
         }
-     }
     }
+}
